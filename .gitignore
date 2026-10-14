@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+
+__pycache__/
+*.py[cod]
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Large geographic datasets
+*.tif
+*.gpkg
