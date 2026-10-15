@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const PADDY_IMG = "https://i.pinimg.com/736x/24/1f/dc/241fdc8cef3406285abb7de79012d47e.jpg";
+
 export default function ConsumerPortal({ user }) {
   const [crops, setCrops] = useState([]);
 
@@ -13,8 +15,15 @@ export default function ConsumerPortal({ user }) {
   return (
     <div>
       <div className="card">
-        <h2>🌾 Fresh Farm Harvests - Direct from AP Farmers</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <img 
+            src={PADDY_IMG} 
+            alt="Paddy" 
+            style={{ width: '26px', height: '26px', objectFit: 'cover', borderRadius: '4px' }} 
+          />
+          <span>Fresh Farm Harvests - Direct from AP Farmers</span>
+        </h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
           Connect directly with verified farmers in your district without middlemen.
         </p>
       </div>
@@ -23,7 +32,14 @@ export default function ConsumerPortal({ user }) {
         {crops.map((c) => (
           <div key={c.id} className="item-card">
             <div>
-              <span className="role-badge farmer">Direct Harvest</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <img 
+                  src={PADDY_IMG} 
+                  alt="Harvest" 
+                  style={{ width: '16px', height: '16px', objectFit: 'cover', borderRadius: '3px' }} 
+                />
+                <span className="role-badge farmer">Direct Harvest</span>
+              </div>
               <div className="item-title" style={{ marginTop: '0.5rem' }}>{c.crop_name}</div>
               <small style={{ color: 'var(--text-muted)' }}>Variety: {c.variety}</small>
               <div className="item-price">₹{c.expected_price} / {c.unit}</div>

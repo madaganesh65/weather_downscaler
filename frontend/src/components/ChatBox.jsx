@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 
+const PADDY_IMG = "https://i.pinimg.com/736x/24/1f/dc/241fdc8cef3406285abb7de79012d47e.jpg";
+
 export default function ChatBox({ currentUser }) {
   const [contacts, setContacts] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
 
-  // Fetch verified contacts
   useEffect(() => {
     fetch(`http://127.0.0.1:8000/api/chat/contacts/${currentUser.id}`)
       .then((res) => res.json())
@@ -17,7 +18,6 @@ export default function ChatBox({ currentUser }) {
       .catch(console.error);
   }, [currentUser.id]);
 
-  // Fetch messages with active contact
   const loadMessages = () => {
     if (!selectedUser) return;
     fetch(`http://127.0.0.1:8000/api/chat/messages?user_a=${currentUser.id}&user_b=${selectedUser.id}`)
@@ -28,7 +28,7 @@ export default function ChatBox({ currentUser }) {
 
   useEffect(() => {
     loadMessages();
-    const interval = setInterval(loadMessages, 3000); // Polling every 3s
+    const interval = setInterval(loadMessages, 3000);
     return () => clearInterval(interval);
   }, [selectedUser]);
 
@@ -59,8 +59,19 @@ export default function ChatBox({ currentUser }) {
     <div className="card" style={{ padding: 0 }}>
       <div className="chat-container">
         <div className="chat-sidebar">
-          <div style={{ padding: '0.85rem', fontWeight: 700, borderBottom: '1px solid var(--border-color)' }}>
-            {currentUser.role === 'farmer' ? '🧪 Authorized Dealers' : '🌾 Registered Farmers'}
+          <div style={{ padding: '0.85rem', fontWeight: 700, borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {currentUser.role === 'farmer' ? (
+              <span>🧪 Authorized Dealers</span>
+            ) : (
+              <>
+                <img 
+                  src={PADDY_IMG} 
+                  alt="Farmer" 
+                  style={{ width: '18px', height: '18px', objectFit: 'cover', borderRadius: '3px' }} 
+                />
+                <span>Registered Farmers</span>
+              </>
+            )}
           </div>
           {contacts.map((c) => (
             <div

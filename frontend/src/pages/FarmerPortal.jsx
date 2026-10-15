@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ChatBox from '../components/ChatBox';
 
+const PADDY_IMG = "https://i.pinimg.com/736x/24/1f/dc/241fdc8cef3406285abb7de79012d47e.jpg";
+
 export default function FarmerPortal({ user }) {
   const [activeTab, setActiveTab] = useState('weather');
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,7 +10,6 @@ export default function FarmerPortal({ user }) {
   const [weatherData, setWeatherData] = useState(null);
   const [pesticides, setPesticides] = useState([]);
 
-  // Crop produce state
   const [crops, setCrops] = useState([]);
   const [cropForm, setCropForm] = useState({
     crop_name: 'Paddy (BPT 5204)',
@@ -18,7 +19,6 @@ export default function FarmerPortal({ user }) {
     expected_price: 1850
   });
 
-  // Search villages with phonetic/fuzzy matching
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
       const delayDebounce = setTimeout(() => {
@@ -33,7 +33,6 @@ export default function FarmerPortal({ user }) {
     }
   }, [searchQuery]);
 
-  // Load weather when a village is selected
   const handleSelectVillage = async (villageId) => {
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/weather/village/${villageId}`);
@@ -45,7 +44,6 @@ export default function FarmerPortal({ user }) {
     }
   };
 
-  // Load available pesticides & fertilizers
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/products')
       .then((res) => res.json())
@@ -53,7 +51,6 @@ export default function FarmerPortal({ user }) {
       .catch(console.error);
   }, []);
 
-  // Post harvest produce
   const handleAddProduce = async (e) => {
     e.preventDefault();
     try {
@@ -97,9 +94,19 @@ export default function FarmerPortal({ user }) {
         <button
           onClick={() => setActiveTab('sell')}
           className="btn-primary"
-          style={{ background: activeTab === 'sell' ? 'var(--brand-green)' : '#1f2937' }}
+          style={{ 
+            background: activeTab === 'sell' ? 'var(--brand-green)' : '#1f2937',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem'
+          }}
         >
-          📦 Sell Farm Harvest to Buyers
+          <img 
+            src={PADDY_IMG} 
+            alt="Paddy" 
+            style={{ width: '18px', height: '18px', objectFit: 'cover', borderRadius: '3px' }} 
+          />
+          <span>Sell Farm Harvest to Buyers</span>
         </button>
         <button
           onClick={() => setActiveTab('chat')}
@@ -110,7 +117,6 @@ export default function FarmerPortal({ user }) {
         </button>
       </div>
 
-      {/* TAB 1: Downscaling Weather Engine */}
       {activeTab === 'weather' && (
         <div>
           <div className="card">
@@ -197,7 +203,6 @@ export default function FarmerPortal({ user }) {
         </div>
       )}
 
-      {/* TAB 2: Certified Pesticides & Fertilizers */}
       {activeTab === 'pesticides' && (
         <div className="card">
           <h3>Authorized Dealer Pesticides & Fertilizers</h3>
@@ -224,7 +229,6 @@ export default function FarmerPortal({ user }) {
         </div>
       )}
 
-      {/* TAB 3: Sell Harvest to Consumers */}
       {activeTab === 'sell' && (
         <div className="card">
           <h3>List Harvested Crops for Consumers</h3>
@@ -286,7 +290,6 @@ export default function FarmerPortal({ user }) {
         </div>
       )}
 
-      {/* TAB 4: Dealer Chat */}
       {activeTab === 'chat' && <ChatBox currentUser={user} />}
     </div>
   );

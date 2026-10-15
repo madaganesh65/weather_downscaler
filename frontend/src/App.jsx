@@ -5,6 +5,8 @@ import FarmerPortal from './pages/FarmerPortal';
 import SupplierPortal from './pages/SupplierPortal';
 import ConsumerPortal from './pages/ConsumerPortal';
 
+const PADDY_IMG = "https://i.pinimg.com/736x/24/1f/dc/241fdc8cef3406285abb7de79012d47e.jpg";
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('ap_portal_user');
@@ -28,8 +30,12 @@ export default function App() {
   return (
     <div>
       <nav className="navbar">
-        <div className="nav-brand">
-          <span>🌾</span>
+        <div className="nav-brand" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <img 
+            src={PADDY_IMG} 
+            alt="Paddy Logo" 
+            style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '6px' }} 
+          />
           <span>AP Microclimate & Agro-Portal</span>
         </div>
         <div className="nav-user">

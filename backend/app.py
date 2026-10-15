@@ -43,7 +43,7 @@ if os.path.exists(MANDAL_MAP_PATH):
         print(f"[Warning]: Failed to load mandal_map.json: {e}")
 
 villages_df = pd.DataFrame()
-village_lookup_names = []  # In-memory index for fast Levenshtein matching
+village_lookup_names = []
 
 if os.path.exists(VILLAGES_CSV_PATH):
     villages_df = pd.read_csv(VILLAGES_CSV_PATH)
@@ -76,19 +76,36 @@ if os.path.exists(VILLAGES_CSV_PATH):
 else:
     print(f"[Warning]: {VILLAGES_CSV_PATH} not found.")
 
-# ----------------- Phonetic & Fuzzy Search Route -----------------
+# ----------------- ENDPOINTS -----------------
+
+@app.get("/")
+def health_check():
+    return {"status": "online"}
+
+@app.get("/api/geo/hierarchy")
+def get_geo_hierarchy():
+    """Returns the distinct list of AP districts and their verified mandals."""
+    hierarchy = {}
+    for mandal_code, data in mandal_map.items():
+        if isinstance(data, dict):
+            dist = data.get("district_name", "General").title()
+            mandal = data.get("mandal_name", mandal_code).title()
+        else:
+            dist = "General"
+            mandal = str(data).title()
+
+        if dist not in hierarchy:
+            hierarchy[dist] = set()
+        hierarchy[dist].add(mandal)
+
+    return {k: sorted(list(v)) for k, v in sorted(hierarchy.items())}
 
 @app.get("/api/villages/search")
 def search_villages(
     q: str = Query(..., min_length=2, description="Search query"),
     district: str = Query(None, description="Optional District Filter")
 ):
-    """
-    3-Stage Search:
-    1. Check verified crowdsourced table in PostgreSQL.
-    2. Exact substring search in ap_villages_final.csv.
-    3. RapidFuzz WRatio (Levenshtein + Token Sort) with match confidence scoring.
-    """
+    """Fuzzy Levenshtein & Spatial DB Search Route"""
     if villages_df.empty:
         return {"villages": []}
 
@@ -116,9 +133,9 @@ def search_villages(
                     for row in crowd_hits:
                         results.append({
                             "village_id": 900000,
-                            "name": row["raw_village_input"],
-                            "subdistrict_name": row["raw_mandal_input"],
-                            "district_name": row["raw_district_input"],
+                            "name": row["raw_village_input"].title(),
+                            "subdistrict_name": row["raw_mandal_input"].title(),
+                            "district_name": row["raw_district_input"].title(),
                             "latitude": float(row["resolved_lat"]),
                             "longitude": float(row["resolved_lon"]),
                             "elevation_m": float(row["resolved_elevation"]),
@@ -132,67 +149,44 @@ def search_villages(
             if not conn.closed:
                 conn.close()
 
-    # --- STAGE 2: Exact Substring Matching ---
-    subset_df = villages_df
-    if district and COL_DIST in villages_df.columns:
-        subset_df = subset_df[subset_df["clean_district"] == district.strip().lower()]
-
-    direct_matches = subset_df[subset_df["clean_village"].str.contains(query_clean, na=False)].head(10)
-
-    if not direct_matches.empty:
-        results = []
-        for idx, row in direct_matches.iterrows():
-            results.append({
-                "village_id": int(row.get(COL_ID, idx)),
-                "name": str(row.get(COL_NAME, "")),
-                "subdistrict_name": str(row.get(COL_SUBDIST, "")),
-                "district_name": str(row.get(COL_DIST, "")),
-                "latitude": float(row.get(COL_LAT, 0.0) if pd.notnull(row.get(COL_LAT)) else 0.0),
-                "longitude": float(row.get(COL_LON, 0.0) if pd.notnull(row.get(COL_LON)) else 0.0),
-                "elevation_m": float(row.get(COL_ELEV, 45.0) if pd.notnull(row.get(COL_ELEV)) else 45.0),
-                "match_score": 100,
-                "match_type": "exact_substring"
-            })
-        return {"villages": results}
-
-    # --- STAGE 3: Fuzzy Levenshtein & Phonetic Scoring ---
-    # rapidfuzz.process.extract uses weighted ratio (handles typos, character swaps, dropped vowels)
+    # --- STAGE 2: Fuzzy Levenshtein & Phonetic Scoring ---
+    safe_lookup_names = [str(x) if pd.notnull(x) else "" for x in village_lookup_names]
+    
     fuzzy_hits = process.extract(
         query_clean,
-        village_lookup_names,
+        safe_lookup_names,
         scorer=fuzz.WRatio,
-        limit=8,
-        score_cutoff=65.0  # Accept matches with >= 65% similarity
+        limit=10,
+        score_cutoff=65.0
     )
 
     results = []
     for match_tuple in fuzzy_hits:
         matched_str, score, matched_idx = match_tuple
         row = villages_df.iloc[matched_idx]
+        
+        if district and COL_DIST in villages_df.columns:
+            if str(row.get(COL_DIST, "")).strip().lower() != district.strip().lower():
+                continue
 
         results.append({
             "village_id": int(row.get(COL_ID, matched_idx)),
-            "name": str(row.get(COL_NAME, "")),
-            "subdistrict_name": str(row.get(COL_SUBDIST, "")),
-            "district_name": str(row.get(COL_DIST, "")),
+            "name": str(row.get(COL_NAME, "")).title(),
+            "subdistrict_name": str(row.get(COL_SUBDIST, "")).title(),
+            "district_name": str(row.get(COL_DIST, "")).title(),
             "latitude": float(row.get(COL_LAT, 0.0) if pd.notnull(row.get(COL_LAT)) else 0.0),
             "longitude": float(row.get(COL_LON, 0.0) if pd.notnull(row.get(COL_LON)) else 0.0),
             "elevation_m": float(row.get(COL_ELEV, 45.0) if pd.notnull(row.get(COL_ELEV)) else 45.0),
-            "match_score": round(score, 1),
-            "match_type": "fuzzy_phonetic"
+            "match_score": round(score, 1)
         })
 
-    return {"villages": results}
-
-
-# ----------------- Weather Downscaling Engine -----------------
+    return {"villages": results[:6]}
 
 @app.get("/api/weather/village/{village_id}")
 def get_downscaled_weather(village_id: int):
     if villages_df.empty:
         raise HTTPException(status_code=500, detail="Village dataset unavailable.")
 
-    # Match by ID column or row index
     if COL_ID in villages_df.columns:
         match = villages_df[villages_df[COL_ID] == village_id]
     else:
@@ -209,16 +203,11 @@ def get_downscaled_weather(village_id: int):
     lat = float(row.get(COL_LAT, 16.5) if pd.notnull(row.get(COL_LAT)) else 16.5)
     lon = float(row.get(COL_LON, 80.5) if pd.notnull(row.get(COL_LON)) else 80.5)
     local_elevation = float(row.get(COL_ELEV, 45.0) if pd.notnull(row.get(COL_ELEV)) else 45.0)
-    v_name = str(row.get(COL_NAME, "Selected Village"))
-    subdistrict = str(row.get(COL_SUBDIST, ""))
-    district = str(row.get(COL_DIST, ""))
+    v_name = str(row.get(COL_NAME, "Selected Village")).title()
+    subdistrict = str(row.get(COL_SUBDIST, "")).title()
+    district = str(row.get(COL_DIST, "")).title()
 
-    # Fetch synoptic grid forecast from Open-Meteo
-    grid_temp = 32.0
-    grid_elevation = 20.0
-    humidity = 65
-    wind_speed = 12.0
-
+    grid_temp, grid_elevation, humidity, wind_speed = 32.0, 20.0, 65, 12.0
     try:
         url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&elevation=nan"
         resp = requests.get(url, timeout=5)
@@ -232,7 +221,6 @@ def get_downscaled_weather(village_id: int):
     except Exception as e:
         print(f"[Weather API Warning]: {e}")
 
-    # Environmental Lapse Rate downscaling: -6.5°C per 1000m elevation gain
     lapse_rate = 0.0065
     delta_h = local_elevation - grid_elevation
     downscaled_temp = round(grid_temp - (delta_h * lapse_rate), 2)
