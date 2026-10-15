@@ -4,8 +4,8 @@ from psycopg2.extras import RealDictCursor
 DB_CONFIG = {
     "dbname": "ap_weather_db",
     "user": "postgres",
-    "password": "Ganesh@123",  # Set your pgAdmin master password here
-    "host": "localhost",
+    "password": "admin123",
+    "host": "127.0.0.1",
     "port": "5432"
 }
 

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import './Login.css';
 
 const AP_DISTRICTS = [
   "Alluri Sitharama Raju", "Anakapalli", "Ananthapuramu", "Annamayya", "Bapatla", 
@@ -10,7 +9,7 @@ const AP_DISTRICTS = [
 ];
 
 export default function Login({ onLoginSuccess }) {
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authMode, setAuthMode] = useState('login');
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -64,178 +63,200 @@ export default function Login({ onLoginSuccess }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Registration failed');
 
-      setSuccessNotice('Registration submitted! Your record is awaiting Admin approval.');
+      setSuccessNotice(data.message);
       setAuthMode('login');
+      setLoginIdentifier(regForm.identifier);
+      setLoginPassword('');
     } catch (err) {
       setErrorMsg(err.message);
     }
   };
 
   return (
-    <div className="login-wrapper">
-      <div className="login-glow-1" />
-      <div className="login-glow-2" />
-
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-icon-box">🌱</div>
-          <h1 className="login-title">Andhra Pradesh Microclimate Portal</h1>
-          <p className="login-subtitle">High-Resolution Weather Downscaling & Agro-Portal</p>
+    <div style={{ maxWidth: '540px', margin: '4rem auto', padding: '1rem' }}>
+      <div className="card">
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <span style={{ fontSize: '2.5rem' }}>🌾</span>
+          <h1 style={{ fontSize: '1.4rem', marginTop: '0.5rem' }}>Andhra Pradesh Agro & Climate Hub</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            Microclimate Downscaling & Integrated Agro-Supply Network
+          </p>
         </div>
 
-        <div className="tab-container">
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
           <button
             type="button"
-            onClick={() => { setAuthMode('login'); setErrorMsg(''); setSuccessNotice(''); }}
-            className={`tab-btn ${authMode === 'login' ? 'active' : ''}`}
+            onClick={() => { setAuthMode('login'); setErrorMsg(''); }}
+            className={`btn-primary`}
+            style={{ flex: 1, background: authMode === 'login' ? 'var(--brand-green)' : '#1f2937' }}
           >
             Sign In
           </button>
           <button
             type="button"
-            onClick={() => { setAuthMode('register'); setErrorMsg(''); setSuccessNotice(''); }}
-            className={`tab-btn ${authMode === 'register' ? 'active' : ''}`}
+            onClick={() => { setAuthMode('register'); setErrorMsg(''); }}
+            className={`btn-primary`}
+            style={{ flex: 1, background: authMode === 'register' ? 'var(--brand-green)' : '#1f2937' }}
           >
             Create Account
           </button>
         </div>
 
-        {errorMsg && <div className="alert-error">⚠️ {errorMsg}</div>}
-        {successNotice && <div className="alert-success">✓ {successNotice}</div>}
+        {errorMsg && (
+          <div style={{ background: '#7f1d1d', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.8rem' }}>
+            ⚠️ {errorMsg}
+          </div>
+        )}
+        {successNotice && (
+          <div style={{ background: '#064e3b', padding: '0.75rem', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.8rem' }}>
+            ✓ {successNotice}
+          </div>
+        )}
 
         {authMode === 'login' ? (
           <form onSubmit={handleLogin}>
             <div className="form-group">
-              <label className="form-label">Registered Mobile / Email</label>
+              <label>Phone Number or Official Email</label>
               <input
                 type="text"
                 required
-                placeholder="e.g. 9848022338 or admin@ap.gov.in"
+                placeholder="e.g. 9848011223 or admin@ap.gov.in"
                 value={loginIdentifier}
                 onChange={(e) => setLoginIdentifier(e.target.value)}
-                className="form-input"
               />
             </div>
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label>Password</label>
               <input
                 type="password"
                 required
-                placeholder="Enter password"
+                placeholder="••••••••"
                 value={loginPassword}
                 onChange={(e) => setLoginPassword(e.target.value)}
-                className="form-input"
               />
             </div>
-            <button type="submit" className="btn-primary">Sign In to Portal →</button>
+            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
+              Sign In to Portal →
+            </button>
           </form>
         ) : (
           <form onSubmit={handleRegister}>
-            <div className="alert-info">ℹ️ Approvals gated by District Administrator.</div>
-            <div className="grid-2">
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={regForm.name}
-                  onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Mobile Number</label>
-                <input
-                  type="text"
-                  required
-                  value={regForm.identifier}
-                  onChange={(e) => setRegForm({ ...regForm, identifier: e.target.value })}
-                  className="form-input"
-                />
-              </div>
+            <div className="form-group">
+              <label>Your Name</label>
+              <input
+                type="text"
+                required
+                value={regForm.name}
+                onChange={(e) => setRegForm({ ...regForm, name: e.target.value })}
+              />
             </div>
 
-            <div className="grid-2">
+            <div className="form-group">
+              <label>Mobile Number</label>
+              <input
+                type="text"
+                required
+                placeholder="10-digit mobile"
+                value={regForm.identifier}
+                onChange={(e) => setRegForm({ ...regForm, identifier: e.target.value })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Account Role</label>
+              <select
+                value={regForm.role}
+                onChange={(e) => setRegForm({ ...regForm, role: e.target.value })}
+              >
+                <option value="farmer">🌾 Farmer (Downscaling, Chat & Sell Produce)</option>
+                <option value="supplier">🧪 Pesticide & Fertilizer Dealer</option>
+                <option value="consumer">🛒 Direct Buyer / Consumer</option>
+              </select>
+            </div>
+
+            <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">Role</label>
-                <select
-                  value={regForm.role}
-                  onChange={(e) => setRegForm({ ...regForm, role: e.target.value })}
-                  className="form-select"
-                >
-                  <option value="farmer">Farmer</option>
-                  <option value="officer">Agricultural Officer</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">District</label>
+                <label>District</label>
                 <select
                   value={regForm.district}
                   onChange={(e) => setRegForm({ ...regForm, district: e.target.value })}
-                  className="form-select"
                 >
-                  {AP_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  {AP_DISTRICTS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
-            </div>
-
-            <div className="grid-2">
               <div className="form-group">
-                <label className="form-label">Mandal Name</label>
+                <label>Mandal</label>
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Lingapalem"
                   value={regForm.mandal}
                   onChange={(e) => setRegForm({ ...regForm, mandal: e.target.value })}
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Village Name</label>
-                <input
-                  type="text"
-                  value={regForm.village}
-                  onChange={(e) => setRegForm({ ...regForm, village: e.target.value })}
-                  className="form-input"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Pattadar Passbook / Govt ID</label>
+              <label>Village Name</label>
               <input
                 type="text"
                 required
-                value={regForm.idProof}
-                onChange={(e) => setRegForm({ ...regForm, idProof: e.target.value })}
-                className="form-input"
+                placeholder="e.g. Rangapuram"
+                value={regForm.village}
+                onChange={(e) => setRegForm({ ...regForm, village: e.target.value })}
               />
             </div>
 
-            <div className="grid-2">
+            {regForm.role === 'farmer' && (
               <div className="form-group">
-                <label className="form-label">Password</label>
+                <label>Pattadar Passbook / Rythu Bharosa ID</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. AP-PPB-88771"
+                  value={regForm.idProof}
+                  onChange={(e) => setRegForm({ ...regForm, idProof: e.target.value })}
+                />
+              </div>
+            )}
+
+            {regForm.role === 'supplier' && (
+              <div className="form-group">
+                <label>Pesticides/Fertilizers Retail Trade License No.</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. AP/AGRO/LIC/2026/09"
+                  value={regForm.idProof}
+                  onChange={(e) => setRegForm({ ...regForm, idProof: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Create Password</label>
                 <input
                   type="password"
                   required
                   value={regForm.password}
                   onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-                  className="form-input"
                 />
               </div>
               <div className="form-group">
-                <label className="form-label">Confirm Password</label>
+                <label>Confirm Password</label>
                 <input
                   type="password"
                   required
                   value={regForm.confirmPassword}
                   onChange={(e) => setRegForm({ ...regForm, confirmPassword: e.target.value })}
-                  className="form-input"
                 />
               </div>
             </div>
 
-            <button type="submit" className="btn-primary">Submit Application →</button>
+            <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '0.85rem' }}>
+              Complete Registration →
+            </button>
           </form>
         )}
       </div>
